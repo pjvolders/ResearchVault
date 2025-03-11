@@ -1,0 +1,65 @@
+{% extends 'core/base.html' %}
+
+{% block title %}ResearchVault - Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+    <h1 class="display-4">Welcome to ResearchVault</h1>
+    <p class="lead">Your personal research publication management system.</p>
+    <hr class="my-4">
+    <p>Track, organize, and manage your scientific publications in one place.</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'core:publication_list' %}" role="button">Browse Publications</a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Publications</h5>
+                <p class="card-text display-4">{{ total_publications }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Authors</h5>
+                <p class="card-text display-4">{{ total_authors }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Access Admin</h5>
+                <p class="card-text">Manage publications, authors, and more.</p>
+                <a href="/admin/" class="btn btn-primary">Go to Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h2>Recent Publications</h2>
+    <div class="list-group">
+        {% for publication in recent_publications %}
+        <a href="{% url 'core:publication_detail' publication.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ publication.title }}</h5>
+                <small>{{ publication.publication_year }}</small>
+            </div>
+            <p class="mb-1">
+                {% for author in publication.get_ordered_authors %}
+                {{ author }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            <small>{{ publication.journal }}{% if publication.volume %}, {{ publication.volume }}{% endif %}{% if publication.issue %}({{ publication.issue }}){% endif %}</small>
+        </a>
+        {% empty %}
+        <div class="list-group-item">
+            <p class="mb-0">No publications available yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

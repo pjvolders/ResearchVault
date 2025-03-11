@@ -1,0 +1,157 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Publications{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Publications</h1>
+
+<!-- Filters -->
+<div class="filter-section">
+    <h5>Filter Publications</h5>
+    <form method="get" class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="year" class="form-label">Publication Year</label>
+                <select name="year" id="year" class="form-select">
+                    <option value="">All Years</option>
+                    {% for year in years %}
+                        <option value="{{ year }}" {% if current_year == year|stringformat:"i" %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <select name="author" id="author" class="form-select">
+                    <option value="">All Authors</option>
+                    {% for author in authors %}
+                        <option value="{{ author.id }}" {% if current_author == author.id|stringformat:"i" %}selected{% endif %}>{{ author }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="search" class="form-label">Search Title</label>
+                <input type="text" name="search" id="search" class="form-control" value="{{ current_search }}">
+            </div>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{% url 'core:publication_list' %}" class="btn btn-secondary">Clear Filters</a>
+        </div>
+    </form>
+</div>
+
+<!-- Publication List -->
+<div class="mt-4">
+    {% for publication in publications %}
+    <div class="publication-item card p-3">
+        <div class="row">
+            <div class="col-md-10">
+                <h3 class="publication-title">
+                    <a href="{% url 'core:publication_detail' publication.id %}">{{ publication.title }}</a>
+                </h3>
+                <div class="publication-authors">
+                    {% for author in publication.get_ordered_authors %}
+                        {{ author }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="publication-meta mt-2">
+                    {% if publication.journal %}
+                        <span class="badge bg-primary">Journal</span> {{ publication.journal }}
+                    {% elif publication.conference %}
+                        <span class="badge bg-success">Conference</span> {{ publication.conference }}
+                    {% endif %}
+                    
+                    {% if publication.volume or publication.issue %}
+                        {% if publication.volume %}Vol. {{ publication.volume }}{% endif %}
+                        {% if publication.issue %}({{ publication.issue }}){% endif %}
+                    {% endif %}
+                    
+                    {% if publication.pages %}
+                        pp. {{ publication.pages }}
+                    {% endif %}
+                    
+                    {% if publication.publication_year %}
+                        <span class="ms-2">({{ publication.publication_year }})</span>
+                    {% endif %}
+                </div>
+                
+                {% if publication.doi %}
+                <div class="mt-2">
+                    <small class="text-muted">DOI: <a href="https://doi.org/{{ publication.doi }}" target="_blank">{{ publication.doi }}</a></small>
+                </div>
+                {% endif %}
+                
+                {% if publication.abstract %}
+                <div class="mt-2">
+                    <p class="text-muted small">{{ publication.abstract|truncatewords:50 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-2 text-end">
+                <div class='altmetric-embed' data-badge-type='donut' data-doi="{{ publication.doi }}"></div>
+
+
+                <!--{% if publication.citation_count > 0 %}
+                <div class="mt-2">
+                    <span class="badge bg-info">{{ publication.citation_count }} citations</span>
+                </div>
+                {% endif %}-->
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        No publications found matching your criteria.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Publication pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if current_year %}&year={{ current_year }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_year %}&year={{ current_year }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if current_year %}&year={{ current_year }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_year %}&year={{ current_year }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_year %}&year={{ current_year }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<script type='text/javascript' src='https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js'></script>
+{% endblock %}

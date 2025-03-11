@@ -1,0 +1,231 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ publication.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-3">{{ publication.title }}</h1>
+        
+        <!-- Authors -->
+        <div class="mb-4">
+            <h5>Authors</h5>
+            <p class="lead">
+                {% for author in publication.get_ordered_authors %}
+                    <span class="badge bg-secondary">{{ author }}</span>
+                {% empty %}
+                    <span class="text-muted">No authors listed</span>
+                {% endfor %}
+                
+                {% if publication.corresponding_author %}
+                    <br><small class="text-muted mt-2">Corresponding author: {{ publication.corresponding_author }}</small>
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- Publication details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Publication Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if publication.journal %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Journal:</strong> {{ publication.journal }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.conference %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Conference:</strong> {{ publication.conference }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.publication_year %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Year:</strong> {{ publication.publication_year }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.publication_date %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Date:</strong> {{ publication.publication_date }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.volume %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Volume:</strong> {{ publication.volume }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.issue %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Issue:</strong> {{ publication.issue }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if publication.pages %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Pages:</strong> {{ publication.pages }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Abstract -->
+        {% if publication.abstract %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Abstract</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ publication.abstract }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Keywords and Research Field -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Classification</h5>
+            </div>
+            <div class="card-body">
+                {% if publication.keywords %}
+                <div class="mb-3">
+                    <strong>Keywords:</strong><br>
+                    {% for keyword in publication.get_keywords_list %}
+                        <span class="badge bg-info">{{ keyword }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if publication.research_field %}
+                <div>
+                    <strong>Research Field:</strong> {{ publication.research_field }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        {% if publication.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ publication.notes|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Identifiers and Links -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Identifiers</h5>
+            </div>
+            <div class="card-body">
+                {% if publication.doi %}
+                <div class="mb-2">
+                    <strong>DOI:</strong> <a href="https://doi.org/{{ publication.doi }}" target="_blank">{{ publication.doi }}</a>
+                </div>
+                {% endif %}
+                
+                {% if publication.pmid %}
+                <div class="mb-2">
+                    <strong>PubMed ID:</strong> <a href="https://pubmed.ncbi.nlm.nih.gov/{{ publication.pmid }}" target="_blank">{{ publication.pmid }}</a>
+                </div>
+                {% endif %}
+                
+                {% if publication.arxiv_id %}
+                <div class="mb-2">
+                    <strong>arXiv:</strong> <a href="https://arxiv.org/abs/{{ publication.arxiv_id }}" target="_blank">{{ publication.arxiv_id }}</a>
+                </div>
+                {% endif %}
+                
+                {% if publication.isbn %}
+                <div class="mb-2">
+                    <strong>ISBN:</strong> {{ publication.isbn }}
+                </div>
+                {% endif %}
+                
+                {% if publication.url %}
+                <div class="mt-3">
+                    <a href="{{ publication.url }}" class="btn btn-primary btn-sm" target="_blank">Visit Publication Page</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Files -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Files</h5>
+            </div>
+            <div class="card-body">
+                {% if publication.pdf_file %}
+                <div class="mb-2">
+                    <strong>PDF:</strong> <a href="{{ publication.pdf_file.url }}" target="_blank">Download PDF</a>
+                </div>
+                {% endif %}
+                
+                {% if publication.supplementary_materials %}
+                <div class="mb-2">
+                    <strong>Supplementary Materials:</strong> <a href="{{ publication.supplementary_materials.url }}" target="_blank">Download</a>
+                </div>
+                {% endif %}
+                
+                {% if not publication.pdf_file and not publication.supplementary_materials %}
+                <p class="text-muted">No files available</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Metrics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Metrics</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Citations:</strong> {{ publication.citation_count }}
+                </div>
+                
+                {% if publication.impact_factor %}
+                <div class="mb-2">
+                    <strong>Journal Impact Factor:</strong> {{ publication.impact_factor }}
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+        
+        <!-- Admin Link -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="/admin/core/publication/{{ publication.id }}/change/" class="btn btn-warning">Edit in Admin</a>
+            </div>
+        </div>
+        
+        <!-- Timestamps -->
+        <div class="card">
+            <div class="card-body text-muted small">
+                <div>Added: {{ publication.created_at|date:"F j, Y" }}</div>
+                <div>Last updated: {{ publication.updated_at|date:"F j, Y" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'core:publication_list' %}" class="btn btn-secondary">&laquo; Back to Publications</a>
+</div>
+{% endblock %}
