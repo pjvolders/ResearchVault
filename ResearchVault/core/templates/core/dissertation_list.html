@@ -1,0 +1,170 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dissertations{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Dissertations</h1>
+
+<!-- Filters -->
+<div class="filter-section">
+    <h5>Filter Dissertations</h5>
+    <form method="get" class="row">
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="degree" class="form-label">Degree Type</label>
+                <select name="degree" id="degree" class="form-select">
+                    <option value="">All Degrees</option>
+                    {% for degree_value, degree_name in degrees %}
+                        <option value="{{ degree_value }}" {% if current_degree == degree_value %}selected{% endif %}>{{ degree_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <select name="author" id="author" class="form-select">
+                    <option value="">All Authors</option>
+                    {% for author in authors %}
+                        <option value="{{ author.id }}" {% if current_author == author.id|stringformat:"i" %}selected{% endif %}>{{ author }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="promoter" class="form-label">Promoter</label>
+                <select name="promoter" id="promoter" class="form-select">
+                    <option value="">All Promoters</option>
+                    {% for promoter in promoters %}
+                        <option value="{{ promoter.id }}" {% if current_promoter == promoter.id|stringformat:"i" %}selected{% endif %}>{{ promoter }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mb-3">
+                <label for="search" class="form-label">Search Title</label>
+                <input type="text" name="search" id="search" class="form-control" value="{{ current_search }}">
+            </div>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{% url 'core:dissertation_list' %}" class="btn btn-secondary">Clear Filters</a>
+        </div>
+    </form>
+</div>
+
+<!-- Dissertation List -->
+<div class="mt-4">
+    {% for dissertation in dissertations %}
+    <div class="dissertation-item card p-3 mb-3">
+        <div class="row">
+            <div class="col-md-10">
+                <h3 class="dissertation-title">
+                    <a href="{% url 'core:dissertation_detail' dissertation.id %}">{{ dissertation.title }}</a>
+                </h3>
+                <div class="dissertation-meta">
+                    <span class="badge bg-primary">{{ dissertation.get_degree_display }}</span>
+                    <strong>Author:</strong> {{ dissertation.author }}
+                </div>
+                <div class="mt-2">
+                    <strong>Promoter:</strong> {{ dissertation.promoter }}
+                    
+                    {% if dissertation.copromoters.exists %}
+                        | <strong>Co-promoters:</strong> 
+                        {% for copromoter in dissertation.copromoters.all %}
+                            {{ copromoter }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="mt-2">
+                    {% if dissertation.institution %}
+                        <strong>Institution:</strong> {{ dissertation.institution }}
+                    {% endif %}
+                    
+                    {% if dissertation.department %}
+                        | <strong>Department:</strong> {{ dissertation.department }}
+                    {% endif %}
+                </div>
+                <div class="mt-2">
+                    {% if dissertation.defense_date %}
+                        <strong>Defense Date:</strong> {{ dissertation.defense_date|date:"F j, Y" }}
+                    {% endif %}
+                    
+                    {% if dissertation.start_date %}
+                        | <strong>Started:</strong> {{ dissertation.start_date|date:"F j, Y" }}
+                    {% endif %}
+                </div>
+                
+                {% if dissertation.abstract %}
+                <div class="mt-2">
+                    <p class="text-muted small">{{ dissertation.abstract|truncatewords:50 }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-2 text-end">
+                {% if dissertation.pdf_file %}
+                <a href="{{ dissertation.pdf_file.url }}" class="btn btn-sm btn-success" target="_blank">
+                    <i class="bi bi-file-pdf"></i> PDF
+                </a>
+                {% endif %}
+                
+                {% if dissertation.url %}
+                <a href="{{ dissertation.url }}" class="btn btn-sm btn-info mt-2" target="_blank">
+                    <i class="bi bi-link"></i> Link
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        No dissertations found matching your criteria.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Dissertation pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if current_degree %}&degree={{ current_degree }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_promoter %}&promoter={{ current_promoter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_degree %}&degree={{ current_degree }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_promoter %}&promoter={{ current_promoter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if current_degree %}&degree={{ current_degree }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_promoter %}&promoter={{ current_promoter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_degree %}&degree={{ current_degree }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_promoter %}&promoter={{ current_promoter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_degree %}&degree={{ current_degree }}{% endif %}{% if current_author %}&author={{ current_author }}{% endif %}{% if current_promoter %}&promoter={{ current_promoter }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

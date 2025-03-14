@@ -1,0 +1,185 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ dissertation.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-3">{{ dissertation.title }}</h1>
+        
+        <!-- Degree badge -->
+        <div class="mb-4">
+            <span class="badge bg-primary">{{ dissertation.get_degree_display }}</span>
+        </div>
+        
+        <!-- Author & Promoters -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">People</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Author:</strong> {{ dissertation.author }}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <strong>Promoter:</strong> {{ dissertation.promoter }}
+                    </div>
+                    
+                    {% if dissertation.copromoters.exists %}
+                    <div class="col-md-12 mb-3">
+                        <strong>Co-promoters:</strong>
+                        <ul class="list-inline">
+                            {% for copromoter in dissertation.copromoters.all %}
+                            <li class="list-inline-item">{{ copromoter }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if dissertation.supervisor %}
+                    <div class="col-md-12 mb-3">
+                        <strong>Supervisor:</strong> {{ dissertation.supervisor }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Institution details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Institution</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if dissertation.institution %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Institution:</strong> {{ dissertation.institution }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if dissertation.department %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Department:</strong> {{ dissertation.department }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dates -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Timeframe</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if dissertation.start_date %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Start Date:</strong> {{ dissertation.start_date|date:"F j, Y" }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if dissertation.defense_date %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Defense Date:</strong> {{ dissertation.defense_date|date:"F j, Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Abstract -->
+        {% if dissertation.abstract %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Abstract</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ dissertation.abstract|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Keywords -->
+        {% if dissertation.keywords %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Keywords</h5>
+            </div>
+            <div class="card-body">
+                {% for keyword in dissertation.get_keywords_list %}
+                    <span class="badge bg-info">{{ keyword }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if dissertation.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ dissertation.notes|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Links and Files -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Access</h5>
+            </div>
+            <div class="card-body">
+                {% if dissertation.url %}
+                <div class="mb-3">
+                    <a href="{{ dissertation.url }}" class="btn btn-primary" target="_blank">
+                        <i class="bi bi-link"></i> Visit Repository Page
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if dissertation.pdf_file %}
+                <div class="mb-3">
+                    <a href="{{ dissertation.pdf_file.url }}" class="btn btn-success" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Download PDF
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% if not dissertation.url and not dissertation.pdf_file %}
+                <p class="text-muted">No digital resources available</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Admin Link -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="/admin/core/dissertation/{{ dissertation.id }}/change/" class="btn btn-warning">Edit in Admin</a>
+            </div>
+        </div>
+        
+        <!-- Timestamps -->
+        <div class="card">
+            <div class="card-body text-muted small">
+                <div>Added: {{ dissertation.created_at|date:"F j, Y" }}</div>
+                <div>Last updated: {{ dissertation.updated_at|date:"F j, Y" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'core:dissertation_list' %}" class="btn btn-secondary">&laquo; Back to Dissertations</a>
+</div>
+{% endblock %}

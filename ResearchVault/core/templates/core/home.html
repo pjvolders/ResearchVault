@@ -7,59 +7,109 @@
     <h1 class="display-4">Welcome to ResearchVault</h1>
     <p class="lead">Your personal research publication management system.</p>
     <hr class="my-4">
-    <p>Track, organize, and manage your scientific publications in one place.</p>
-    <a class="btn btn-primary btn-lg" href="{% url 'core:publication_list' %}" role="button">Browse Publications</a>
+    <p>Track, organize, and manage your scientific publications and dissertations in one place.</p>
+    <div class="mt-3">
+        <a class="btn btn-primary btn-lg me-2" href="{% url 'core:publication_list' %}" role="button">Browse Publications</a>
+        <a class="btn btn-success btn-lg" href="{% url 'core:dissertation_list' %}" role="button">Browse Dissertations</a>
+    </div>
 </div>
 
 <div class="row mt-5">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title">Total Publications</h5>
+                <h5 class="card-title">Publications</h5>
                 <p class="card-text display-4">{{ total_publications }}</p>
+                <a href="{% url 'core:publication_list' %}" class="btn btn-sm btn-primary">View All</a>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h5 class="card-title">Total Authors</h5>
+                <h5 class="card-title">Dissertations</h5>
+                <p class="card-text display-4">{{ total_dissertations }}</p>
+                <a href="{% url 'core:dissertation_list' %}" class="btn btn-sm btn-success">View All</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Authors</h5>
                 <p class="card-text display-4">{{ total_authors }}</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Access Admin</h5>
-                <p class="card-text">Manage publications, authors, and more.</p>
-                <a href="/admin/" class="btn btn-primary">Go to Admin</a>
+                <p class="card-text">Manage all content</p>
+                <a href="/admin/" class="btn btn-warning">Go to Admin</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="mt-5">
-    <h2>Recent Publications</h2>
-    <div class="list-group">
-        {% for publication in recent_publications %}
-        <a href="{% url 'core:publication_detail' publication.id %}" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ publication.title }}</h5>
-                <small>{{ publication.publication_year }}</small>
+<div class="row mt-5">
+    <div class="col-md-6">
+        <h2>Recent Publications</h2>
+        <div class="list-group">
+            {% for publication in recent_publications %}
+            <a href="{% url 'core:publication_detail' publication.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ publication.title }}</h5>
+                    <small>{{ publication.publication_year }}</small>
+                </div>
+                <p class="mb-1">
+                    {% for author in publication.get_ordered_authors %}
+                    {{ author }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+                <small>{{ publication.journal }}{% if publication.volume %}, {{ publication.volume }}{% endif %}{% if publication.issue %}({{ publication.issue }}){% endif %}</small>
+            </a>
+            {% empty %}
+            <div class="list-group-item">
+                <p class="mb-0">No publications available yet.</p>
             </div>
-            <p class="mb-1">
-                {% for author in publication.get_ordered_authors %}
-                {{ author }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </p>
-            <small>{{ publication.journal }}{% if publication.volume %}, {{ publication.volume }}{% endif %}{% if publication.issue %}({{ publication.issue }}){% endif %}</small>
-        </a>
-        {% empty %}
-        <div class="list-group-item">
-            <p class="mb-0">No publications available yet.</p>
+            {% endfor %}
         </div>
-        {% endfor %}
+        <div class="mt-2 text-end">
+            <a href="{% url 'core:publication_list' %}" class="btn btn-sm btn-outline-primary">View All Publications</a>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h2>Recent Dissertations</h2>
+        <div class="list-group">
+            {% for dissertation in recent_dissertations %}
+            <a href="{% url 'core:dissertation_detail' dissertation.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ dissertation.title }}</h5>
+                    <small class="badge bg-primary">{{ dissertation.get_degree_display }}</small>
+                </div>
+                <p class="mb-1">
+                    <strong>Author:</strong> {{ dissertation.author }} | <strong>Promoter:</strong> {{ dissertation.promoter }}
+                </p>
+                <small>
+                    {% if dissertation.defense_date %}
+                    Defense: {{ dissertation.defense_date|date:"F j, Y" }}
+                    {% endif %}
+                    {% if dissertation.institution %}
+                    | {{ dissertation.institution }}
+                    {% endif %}
+                </small>
+            </a>
+            {% empty %}
+            <div class="list-group-item">
+                <p class="mb-0">No dissertations available yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-2 text-end">
+            <a href="{% url 'core:dissertation_list' %}" class="btn btn-sm btn-outline-success">View All Dissertations</a>
+        </div>
     </div>
 </div>
 {% endblock %}
