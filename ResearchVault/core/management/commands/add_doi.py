@@ -1,5 +1,6 @@
 import requests
 import logging
+import csv
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from core.models import Publication, Person, AuthorOrder
@@ -9,14 +10,19 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Add a single publication to the database by DOI'
+    help = 'Add publications to the database by DOI or from a CSV file containing DOIs'
 
     def add_arguments(self, parser):
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
             '--doi',
             type=str,
-            required=True,
-            help='The DOI of the publication to add'
+            help='The DOI of a single publication to add'
+        )
+        group.add_argument(
+            '--csv',
+            type=str,
+            help='Path to a CSV file containing DOIs in a column named "doi"'
         )
         parser.add_argument(
             '--dry-run',
@@ -25,19 +31,56 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        doi = options['doi']
-        dry_run = options['dry_run']
-
-        self.stdout.write(self.style.NOTICE(f"Fetching publication with DOI: {doi}"))
+        doi = options.get('doi')
+        csv_path = options.get('csv')
+        dry_run = options.get('dry_run')
         
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY RUN MODE - No changes will be made to the database"))
         
-        self.add_by_doi(doi, dry_run)
+        if doi:
+            self.stdout.write(self.style.NOTICE(f"Fetching publication with DOI: {doi}"))
+            self.add_by_doi(doi, dry_run)
+        elif csv_path:
+            self.import_from_csv(csv_path, dry_run)
+    
+    def import_from_csv(self, csv_path, dry_run=False):
+        """
+        Import DOIs from a CSV file with a column named 'doi'
+        """
+        try:
+            with open(csv_path, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                
+                if 'doi' not in reader.fieldnames:
+                    self.stdout.write(self.style.ERROR(f"CSV file must contain a column named 'doi'"))
+                    return
+                
+                doi_count = 0
+                success_count = 0
+                
+                for row in reader:
+                    doi = row.get('doi', '').strip()
+                    if doi:
+                        doi_count += 1
+                        self.stdout.write(self.style.NOTICE(f"Processing DOI {doi_count}: {doi}"))
+                        try:
+                            result = self.add_by_doi(doi, dry_run)
+                            if result:
+                                success_count += 1
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f"Error adding DOI {doi}: {str(e)}"))
+                
+                self.stdout.write(self.style.SUCCESS(f"Processed {doi_count} DOIs from CSV file. Successfully imported {success_count} publications."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error reading CSV file {csv_path}: {str(e)}"))
     
     def add_by_doi(self, doi, dry_run=False):
         """
         Add a single publication by DOI using the Crossref API
+        
+        Returns:
+            bool: True if the publication was successfully processed, False otherwise
         """
         try:
             # Clean up DOI
@@ -46,7 +89,7 @@ class Command(BaseCommand):
             # Check if publication already exists
             if Publication.objects.filter(doi=cleaned_doi).exists():
                 self.stdout.write(self.style.WARNING(f"Publication with DOI {cleaned_doi} already exists"))
-                return
+                return False
             
             # Fetch from Crossref API
             self.stdout.write(f"Fetching metadata from Crossref for DOI: {cleaned_doi}")
@@ -60,18 +103,18 @@ class Command(BaseCommand):
             
             if not item:
                 self.stdout.write(self.style.ERROR(f"No data found for DOI: {cleaned_doi}"))
-                return
+                return False
                 
             # Extract basic info
             title = item.get('title', [''])[0]
             if not title:
                 self.stdout.write(self.style.ERROR(f"No title found for DOI: {cleaned_doi}"))
-                return
+                return False
                 
             if dry_run:
                 self.stdout.write(f"Would import: {title}")
                 self.stdout.write(f"Authors: {', '.join([author.get('given', '') + ' ' + author.get('family', '') for author in item.get('author', [])])}")
-                return
+                return True
             
             # Create publication
             with transaction.atomic():
@@ -184,8 +227,10 @@ class Command(BaseCommand):
                 
                 pub.save()
                 self.stdout.write(self.style.SUCCESS(f"Added publication: {title}"))
+                return True
         
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error adding publication with DOI {doi}: {str(e)}"))
             import traceback
             self.stdout.write(self.style.ERROR(traceback.format_exc()))
+            return False
