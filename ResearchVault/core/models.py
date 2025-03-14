@@ -160,10 +160,13 @@ class Dissertation(models.Model):
         blank=True,
         help_text="Co-promoters/co-advisors of the dissertation"
     )
-    supervisor = models.CharField(
-        max_length=255, 
-        blank=True, 
-        help_text="Additional supervisor information if different from promoter"
+    supervisor = models.ForeignKey(
+        Person,
+        on_delete=models.SET_NULL,
+        related_name='supervised_dissertations',
+        blank=True,
+        null=True,
+        help_text="Additional supervisor if different from promoter"
     )
     degree = models.CharField(
         max_length=20,
