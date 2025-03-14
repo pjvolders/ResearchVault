@@ -307,19 +307,34 @@ class Command(BaseCommand):
                                                 
                                             # Add to publication authors with correct order
                                             from core.models import AuthorOrder
-                                            AuthorOrder.objects.create(
-                                                publication=pub,
-                                                person=co_person,
-                                                order=i  # Order is the index in the contributors list
-                                            )
-                                            added_contributors += 1
-                                                
+                                            
+                                            # Determine contribution type
+                                            contribution_type = 'normal'
+                                            
                                             # Check if this is a corresponding author
                                             if ('contributor-attributes' in contributor and 
                                                 contributor['contributor-attributes'] and 
                                                 contributor['contributor-attributes'].get('contributor-role') == 'corresponding'):
+                                                contribution_type = 'corresponding'
                                                 pub.corresponding_author = co_person
                                                 pub.save()
+                                            
+                                            # Set first and last author contribution types
+                                            # First author
+                                            if i == 0:
+                                                contribution_type = 'first'
+                                            # Last author
+                                            elif i == len(contributors) - 1:
+                                                contribution_type = 'last'
+                                            
+                                            # Create author order with contribution type
+                                            AuthorOrder.objects.create(
+                                                publication=pub,
+                                                person=co_person,
+                                                order=i,  # Order is the index in the contributors list
+                                                contribution_type=contribution_type
+                                            )
+                                            added_contributors += 1
                                                     
                                         except Exception as e:
                                             self.stdout.write(self.style.ERROR(f"  Error adding contributor {credit_name}: {str(e)}"))

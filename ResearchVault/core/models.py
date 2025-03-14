@@ -85,6 +85,22 @@ class Publication(models.Model):
     def get_ordered_authors(self):
         """Return authors in the correct order."""
         return [ao.person for ao in self.authororder_set.order_by('order')]
+        
+    def get_authors_with_contributions(self):
+        """Return authors with their contribution types."""
+        return self.authororder_set.order_by('order').select_related('person')
+        
+    def has_first_authors(self):
+        """Check if this publication has any first or co-first authors."""
+        return self.authororder_set.filter(contribution_type__in=['first', 'co-first']).exists()
+        
+    def has_last_authors(self):
+        """Check if this publication has any last or co-last authors."""
+        return self.authororder_set.filter(contribution_type__in=['last', 'co-last']).exists()
+        
+    def has_corresponding_authors(self):
+        """Check if this publication has any corresponding authors."""
+        return self.authororder_set.filter(contribution_type='corresponding').exists()
     
     class Meta:
         ordering = ['-publication_year', 'title']
@@ -92,9 +108,24 @@ class Publication(models.Model):
 
 class AuthorOrder(models.Model):
     """Through model to maintain author order in publications."""
+    CONTRIBUTION_CHOICES = [
+        ('normal', 'Normal'),
+        ('first', 'First Author'),
+        ('co-first', 'Co-First Author'),
+        ('last', 'Last Author'),
+        ('co-last', 'Co-Last Author'),
+        ('corresponding', 'Corresponding Author'),
+    ]
+    
     person = models.ForeignKey(Person, on_delete=models.CASCADE)
     publication = models.ForeignKey(Publication, on_delete=models.CASCADE)
     order = models.PositiveIntegerField(default=0, help_text="Order of the author in the publication")
+    contribution_type = models.CharField(
+        max_length=20, 
+        choices=CONTRIBUTION_CHOICES,
+        default='normal',
+        help_text="Type of author contribution"
+    )
     
     class Meta:
         ordering = ['publication', 'order']

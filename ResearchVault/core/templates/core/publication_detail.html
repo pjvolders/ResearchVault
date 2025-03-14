@@ -11,8 +11,19 @@
         <div class="mb-4">
             <h5>Authors</h5>
             <p class="lead">
-                {% for author in publication.get_ordered_authors %}
-                    <span class="badge bg-secondary">{{ author }}</span>
+                {% for author_order in publication.get_authors_with_contributions %}
+                    <span class="badge 
+                        {% if author_order.contribution_type == 'first' %}bg-primary
+                        {% elif author_order.contribution_type == 'co-first' %}bg-info
+                        {% elif author_order.contribution_type == 'last' %}bg-success
+                        {% elif author_order.contribution_type == 'co-last' %}bg-success
+                        {% elif author_order.contribution_type == 'corresponding' %}bg-warning
+                        {% else %}bg-secondary{% endif %}">
+                        {{ author_order.person }}
+                        {% if author_order.contribution_type != 'normal' %}
+                            <small>({{ author_order.get_contribution_type_display }})</small>
+                        {% endif %}
+                    </span>
                 {% empty %}
                     <span class="text-muted">No authors listed</span>
                 {% endfor %}

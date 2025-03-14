@@ -13,6 +13,7 @@ class AuthorOrderInline(admin.TabularInline):
     extra = 1
     verbose_name = "Author"
     verbose_name_plural = "Authors (in order)"
+    fields = ('person', 'order', 'contribution_type')
 
 def merge_people(modeladmin, request, queryset):
     """
@@ -146,7 +147,7 @@ class PublicationAdmin(admin.ModelAdmin):
 # Register the AuthorOrder model separately
 @admin.register(AuthorOrder)
 class AuthorOrderAdmin(admin.ModelAdmin):
-    list_display = ('publication', 'person', 'order')
-    list_filter = ('publication',)
+    list_display = ('publication', 'person', 'order', 'contribution_type')
+    list_filter = ('publication', 'contribution_type')
     search_fields = ('publication__title', 'person__first_name', 'person__last_name')
     ordering = ('publication', 'order')

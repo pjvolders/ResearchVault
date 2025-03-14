@@ -54,9 +54,33 @@
                     <a href="{% url 'core:publication_detail' publication.id %}">{{ publication.title }}</a>
                 </h3>
                 <div class="publication-authors">
-                    {% for author in publication.get_ordered_authors %}
-                        {{ author }}{% if not forloop.last %}, {% endif %}
+                    {% for author_order in publication.get_authors_with_contributions %}
+                        {{ author_order.person }}
+                        {% if author_order.contribution_type != 'normal' %}
+                            <sup>
+                            {% if author_order.contribution_type == 'first' %}*
+                            {% elif author_order.contribution_type == 'co-first' %}*
+                            {% elif author_order.contribution_type == 'last' %}†
+                            {% elif author_order.contribution_type == 'co-last' %}†
+                            {% elif author_order.contribution_type == 'corresponding' %}#
+                            {% endif %}
+                            </sup>
+                        {% endif %}
+                        {% if not forloop.last %}, {% endif %}
                     {% endfor %}
+                    <div class="small text-muted mt-1">
+                        {% if publication.has_first_authors %}
+                            <sup>*</sup> First/co-first author
+                        {% endif %}
+                        
+                        {% if publication.has_last_authors %}
+                            <sup>†</sup> Last/co-last author
+                        {% endif %}
+                        
+                        {% if publication.has_corresponding_authors %}
+                            <sup>#</sup> Corresponding author
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="publication-meta mt-2">
                     {% if publication.journal %}
