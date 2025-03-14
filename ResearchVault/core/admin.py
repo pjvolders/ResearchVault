@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.urls import path
 from django.http import HttpResponseRedirect
 
-from .models import Publication, Person, AuthorOrder
+from .models import Publication, Person, AuthorOrder, Dissertation
 
 # Inline for AuthorOrder to manage in the Publication admin
 class AuthorOrderInline(admin.TabularInline):
@@ -151,3 +151,45 @@ class AuthorOrderAdmin(admin.ModelAdmin):
     list_filter = ('publication', 'contribution_type')
     search_fields = ('publication__title', 'person__first_name', 'person__last_name')
     ordering = ('publication', 'order')
+
+# Register the Dissertation model
+class CoPromoterInline(admin.TabularInline):
+    model = Dissertation.copromoters.through
+    extra = 1
+    verbose_name = "Co-promoter"
+    verbose_name_plural = "Co-promoters"
+
+@admin.register(Dissertation)
+class DissertationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'author', 'promoter', 'degree', 'defense_date', 'institution')
+    list_filter = ('degree', 'defense_date', 'institution', 'department')
+    search_fields = ('title', 'abstract', 'keywords', 'author__first_name', 'author__last_name', 
+                    'promoter__first_name', 'promoter__last_name')
+    readonly_fields = ('created_at', 'updated_at')
+    inlines = [CoPromoterInline]
+    exclude = ('copromoters',)  # Exclude this field as we're using the inline instead
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'author', 'promoter', 'supervisor', 'degree')
+        }),
+        ('Dates', {
+            'fields': ('start_date', 'defense_date')
+        }),
+        ('Institution', {
+            'fields': ('institution', 'department')
+        }),
+        ('Content', {
+            'fields': ('abstract', 'keywords')
+        }),
+        ('Files and Links', {
+            'fields': ('url', 'pdf_file')
+        }),
+        ('Personal', {
+            'fields': ('notes',)
+        }),
+        ('System', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
