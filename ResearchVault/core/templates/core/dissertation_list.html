@@ -22,24 +22,36 @@
         </div>
         <div class="col-md-3">
             <div class="mb-3">
-                <label for="author" class="form-label">Author</label>
-                <select name="author" id="author" class="form-select">
-                    <option value="">All Authors</option>
-                    {% for author in authors %}
-                        <option value="{{ author.id }}" {% if current_author == author.id|stringformat:"i" %}selected{% endif %}>{{ author }}</option>
-                    {% endfor %}
-                </select>
+                <label for="author-search" class="form-label">Author</label>
+                <div class="author-autocomplete-container position-relative">
+                    <input type="text" id="author-search" class="form-control" placeholder="Search for an author..." autocomplete="off">
+                    <input type="hidden" name="author" id="author" value="{{ current_author }}">
+                    <div id="author-suggestions" class="autocomplete-suggestions position-absolute w-100 mt-1 border rounded bg-white shadow d-none"></div>
+                    
+                    {% if current_author %}
+                        <div id="selected-author" class="mt-2 p-2 bg-light rounded">
+                            <span id="selected-author-name"></span>
+                            <button type="button" class="btn-close btn-sm float-end" aria-label="Clear selection" onclick="clearAuthorSelection()"></button>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="mb-3">
-                <label for="promoter" class="form-label">Promoter</label>
-                <select name="promoter" id="promoter" class="form-select">
-                    <option value="">All Promoters</option>
-                    {% for promoter in promoters %}
-                        <option value="{{ promoter.id }}" {% if current_promoter == promoter.id|stringformat:"i" %}selected{% endif %}>{{ promoter }}</option>
-                    {% endfor %}
-                </select>
+                <label for="promoter-search" class="form-label">Promoter</label>
+                <div class="promoter-autocomplete-container position-relative">
+                    <input type="text" id="promoter-search" class="form-control" placeholder="Search for a promoter..." autocomplete="off">
+                    <input type="hidden" name="promoter" id="promoter" value="{{ current_promoter }}">
+                    <div id="promoter-suggestions" class="autocomplete-suggestions position-absolute w-100 mt-1 border rounded bg-white shadow d-none"></div>
+                    
+                    {% if current_promoter %}
+                        <div id="selected-promoter" class="mt-2 p-2 bg-light rounded">
+                            <span id="selected-promoter-name"></span>
+                            <button type="button" class="btn-close btn-sm float-end" aria-label="Clear selection" onclick="clearPromoterSelection()"></button>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-md-3">
@@ -167,4 +179,204 @@
     </ul>
 </nav>
 {% endif %}
+
+<!-- Autocomplete JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize author autocomplete
+    initAutocomplete(
+        'author-search', 
+        'author', 
+        'author-suggestions', 
+        'selected-author', 
+        'selected-author-name',
+        'clearAuthorSelection',
+        [
+            {% for author in authors %}
+                {id: {{ author.id }}, name: "{{ author.first_name }} {{ author.last_name }}", fullname: "{{ author }}"},
+            {% endfor %}
+        ]
+    );
+    
+    // Initialize promoter autocomplete
+    initAutocomplete(
+        'promoter-search', 
+        'promoter', 
+        'promoter-suggestions', 
+        'selected-promoter', 
+        'selected-promoter-name',
+        'clearPromoterSelection',
+        [
+            {% for promoter in promoters %}
+                {id: {{ promoter.id }}, name: "{{ promoter.first_name }} {{ promoter.last_name }}", fullname: "{{ promoter }}"},
+            {% endfor %}
+        ]
+    );
+    
+    // Generic autocomplete initialization function
+    function initAutocomplete(searchId, inputId, suggestionsId, selectedId, selectedNameId, clearFnName, items) {
+        const search = document.getElementById(searchId);
+        const input = document.getElementById(inputId);
+        const suggestions = document.getElementById(suggestionsId);
+        const selected = document.getElementById(selectedId);
+        const selectedName = document.getElementById(selectedNameId);
+        
+        // If there's a selected value, display it
+        if (input.value) {
+            const currentId = parseInt(input.value);
+            const current = items.find(item => item.id === currentId);
+            if (current) {
+                selectedName.textContent = current.fullname;
+                search.placeholder = "Change...";
+                if (selected) {
+                    selected.classList.remove('d-none');
+                }
+            }
+        }
+        
+        // Handle search
+        search.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            if (searchTerm.length < 2) {
+                suggestions.innerHTML = '';
+                suggestions.classList.add('d-none');
+                return;
+            }
+            
+            // Filter items based on search term
+            const matches = items.filter(item => 
+                item.fullname.toLowerCase().includes(searchTerm)
+            );
+            
+            // Display suggestions
+            if (matches.length > 0) {
+                suggestions.innerHTML = '';
+                matches.slice(0, 10).forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'p-2 suggestion-item';
+                    div.style.cursor = 'pointer';
+                    div.textContent = item.fullname;
+                    div.dataset.id = item.id;
+                    div.addEventListener('click', function() {
+                        selectItem(item);
+                    });
+                    div.addEventListener('mouseover', function() {
+                        this.style.backgroundColor = '#f0f0f0';
+                    });
+                    div.addEventListener('mouseout', function() {
+                        this.style.backgroundColor = '';
+                    });
+                    suggestions.appendChild(div);
+                });
+                suggestions.classList.remove('d-none');
+            } else {
+                suggestions.innerHTML = '<div class="p-2">No results found</div>';
+                suggestions.classList.remove('d-none');
+            }
+        });
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!suggestions.contains(e.target) && e.target !== search) {
+                suggestions.classList.add('d-none');
+            }
+        });
+        
+        // Function to select an item
+        function selectItem(item) {
+            input.value = item.id;
+            search.value = '';
+            search.placeholder = "Change...";
+            suggestions.classList.add('d-none');
+            
+            if (!selected) {
+                const container = search.closest(`.${searchId.split('-')[0]}-autocomplete-container`);
+                selected = document.createElement('div');
+                selected.id = selectedId;
+                selected.className = 'mt-2 p-2 bg-light rounded';
+                selectedName = document.createElement('span');
+                selectedName.id = selectedNameId;
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'btn-close btn-sm float-end';
+                clearButton.setAttribute('aria-label', 'Clear selection');
+                clearButton.onclick = window[clearFnName];
+                selected.appendChild(selectedName);
+                selected.appendChild(clearButton);
+                container.appendChild(selected);
+            } else {
+                selected.classList.remove('d-none');
+            }
+            
+            selectedName.textContent = item.fullname;
+        }
+        
+        // Clear selection
+        window[clearFnName] = function() {
+            input.value = '';
+            search.placeholder = `Search for a ${searchId.split('-')[0]}...`;
+            if (selected) {
+                selected.classList.add('d-none');
+            }
+        };
+        
+        // Handle keyboard navigation in suggestions
+        search.addEventListener('keydown', function(e) {
+            if (suggestions.classList.contains('d-none')) return;
+            
+            const suggestionItems = suggestions.querySelectorAll('.suggestion-item');
+            const active = suggestions.querySelector('.suggestion-item.active');
+            
+            // Down arrow
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!active) {
+                    suggestionItems[0]?.classList.add('active');
+                    suggestionItems[0]?.style.backgroundColor = '#e9ecef';
+                } else {
+                    const index = Array.from(suggestionItems).indexOf(active);
+                    if (index < suggestionItems.length - 1) {
+                        active.classList.remove('active');
+                        active.style.backgroundColor = '';
+                        suggestionItems[index + 1].classList.add('active');
+                        suggestionItems[index + 1].style.backgroundColor = '#e9ecef';
+                    }
+                }
+            }
+            
+            // Up arrow
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (active) {
+                    const index = Array.from(suggestionItems).indexOf(active);
+                    if (index > 0) {
+                        active.classList.remove('active');
+                        active.style.backgroundColor = '';
+                        suggestionItems[index - 1].classList.add('active');
+                        suggestionItems[index - 1].style.backgroundColor = '#e9ecef';
+                    }
+                }
+            }
+            
+            // Enter key
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (active) {
+                    const itemId = parseInt(active.dataset.id);
+                    const item = items.find(i => i.id === itemId);
+                    if (item) {
+                        selectItem(item);
+                    }
+                }
+            }
+            
+            // Escape key
+            if (e.key === 'Escape') {
+                suggestions.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -22,13 +22,19 @@
         </div>
         <div class="col-md-4">
             <div class="mb-3">
-                <label for="author" class="form-label">Author</label>
-                <select name="author" id="author" class="form-select">
-                    <option value="">All Authors</option>
-                    {% for author in authors %}
-                        <option value="{{ author.id }}" {% if current_author == author.id|stringformat:"i" %}selected{% endif %}>{{ author }}</option>
-                    {% endfor %}
-                </select>
+                <label for="author-search" class="form-label">Author</label>
+                <div class="author-autocomplete-container position-relative">
+                    <input type="text" id="author-search" class="form-control" placeholder="Search for an author..." autocomplete="off">
+                    <input type="hidden" name="author" id="author" value="{{ current_author }}">
+                    <div id="author-suggestions" class="autocomplete-suggestions position-absolute w-100 mt-1 border rounded bg-white shadow d-none"></div>
+                    
+                    {% if current_author %}
+                        <div id="selected-author" class="mt-2 p-2 bg-light rounded">
+                            <span id="selected-author-name"></span>
+                            <button type="button" class="btn-close btn-sm float-end" aria-label="Clear selection" onclick="clearAuthorSelection()"></button>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-md-4">
@@ -176,6 +182,180 @@
     </ul>
 </nav>
 {% endif %}
+
+<!-- Autocomplete JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const authorSearch = document.getElementById('author-search');
+    const authorInput = document.getElementById('author');
+    const authorSuggestions = document.getElementById('author-suggestions');
+    const selectedAuthor = document.getElementById('selected-author');
+    const selectedAuthorName = document.getElementById('selected-author-name');
+    
+    // Load authors data
+    let authors = [
+        {% for author in authors %}
+            {id: {{ author.id }}, name: "{{ author.first_name }} {{ author.last_name }}", fullname: "{{ author }}"},
+        {% endfor %}
+    ];
+    
+    // If there's a selected author, display it
+    if (authorInput.value) {
+        const currentAuthorId = parseInt(authorInput.value);
+        const currentAuthor = authors.find(a => a.id === currentAuthorId);
+        if (currentAuthor) {
+            selectedAuthorName.textContent = currentAuthor.fullname;
+            authorSearch.placeholder = "Change author...";
+            if (selectedAuthor) {
+                selectedAuthor.classList.remove('d-none');
+            }
+        }
+    }
+    
+    // Handle author search
+    authorSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        if (searchTerm.length < 2) {
+            authorSuggestions.innerHTML = '';
+            authorSuggestions.classList.add('d-none');
+            return;
+        }
+        
+        // Filter authors based on search term
+        const matches = authors.filter(author => 
+            author.fullname.toLowerCase().includes(searchTerm)
+        );
+        
+        // Display suggestions
+        if (matches.length > 0) {
+            authorSuggestions.innerHTML = '';
+            matches.slice(0, 10).forEach(author => {
+                const div = document.createElement('div');
+                div.className = 'p-2 suggestion-item';
+                div.style.cursor = 'pointer';
+                div.textContent = author.fullname;
+                div.dataset.id = author.id;
+                div.addEventListener('click', function() {
+                    selectAuthor(author);
+                });
+                div.addEventListener('mouseover', function() {
+                    this.style.backgroundColor = '#f0f0f0';
+                });
+                div.addEventListener('mouseout', function() {
+                    this.style.backgroundColor = '';
+                });
+                authorSuggestions.appendChild(div);
+            });
+            authorSuggestions.classList.remove('d-none');
+        } else {
+            authorSuggestions.innerHTML = '<div class="p-2">No authors found</div>';
+            authorSuggestions.classList.remove('d-none');
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!authorSuggestions.contains(e.target) && e.target !== authorSearch) {
+            authorSuggestions.classList.add('d-none');
+        }
+    });
+    
+    // Function to select an author
+    function selectAuthor(author) {
+        authorInput.value = author.id;
+        authorSearch.value = '';
+        authorSearch.placeholder = "Change author...";
+        authorSuggestions.classList.add('d-none');
+        
+        if (!selectedAuthor) {
+            const container = authorSearch.closest('.author-autocomplete-container');
+            selectedAuthor = document.createElement('div');
+            selectedAuthor.id = 'selected-author';
+            selectedAuthor.className = 'mt-2 p-2 bg-light rounded';
+            selectedAuthorName = document.createElement('span');
+            selectedAuthorName.id = 'selected-author-name';
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'btn-close btn-sm float-end';
+            clearButton.setAttribute('aria-label', 'Clear selection');
+            clearButton.onclick = clearAuthorSelection;
+            selectedAuthor.appendChild(selectedAuthorName);
+            selectedAuthor.appendChild(clearButton);
+            container.appendChild(selectedAuthor);
+        } else {
+            selectedAuthor.classList.remove('d-none');
+        }
+        
+        selectedAuthorName.textContent = author.fullname;
+    }
+    
+    // Clear author selection
+    window.clearAuthorSelection = function() {
+        authorInput.value = '';
+        authorSearch.placeholder = "Search for an author...";
+        if (selectedAuthor) {
+            selectedAuthor.classList.add('d-none');
+        }
+    };
+    
+    // Handle keyboard navigation in suggestions
+    authorSearch.addEventListener('keydown', function(e) {
+        if (authorSuggestions.classList.contains('d-none')) return;
+        
+        const suggestions = authorSuggestions.querySelectorAll('.suggestion-item');
+        const active = authorSuggestions.querySelector('.suggestion-item.active');
+        
+        // Down arrow
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!active) {
+                suggestions[0]?.classList.add('active');
+                suggestions[0]?.style.backgroundColor = '#e9ecef';
+            } else {
+                const index = Array.from(suggestions).indexOf(active);
+                if (index < suggestions.length - 1) {
+                    active.classList.remove('active');
+                    active.style.backgroundColor = '';
+                    suggestions[index + 1].classList.add('active');
+                    suggestions[index + 1].style.backgroundColor = '#e9ecef';
+                }
+            }
+        }
+        
+        // Up arrow
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (active) {
+                const index = Array.from(suggestions).indexOf(active);
+                if (index > 0) {
+                    active.classList.remove('active');
+                    active.style.backgroundColor = '';
+                    suggestions[index - 1].classList.add('active');
+                    suggestions[index - 1].style.backgroundColor = '#e9ecef';
+                }
+            }
+        }
+        
+        // Enter key
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (active) {
+                const authorId = parseInt(active.dataset.id);
+                const author = authors.find(a => a.id === authorId);
+                if (author) {
+                    selectAuthor(author);
+                }
+            }
+        }
+        
+        // Escape key
+        if (e.key === 'Escape') {
+            authorSuggestions.classList.add('d-none');
+        }
+    });
+});
+</script>
 
 <script type='text/javascript' src='https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js'></script>
 {% endblock %}

@@ -30,6 +30,23 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        
+        /* Autocomplete styles */
+        .autocomplete-suggestions {
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 9999;
+        }
+        .suggestion-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        .suggestion-item.active {
+            background-color: #e9ecef;
+        }
     </style>
 </head>
 <body>
