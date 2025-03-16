@@ -14,6 +14,7 @@ class AuthorOrderInline(admin.TabularInline):
     verbose_name = "Author"
     verbose_name_plural = "Authors (in order)"
     fields = ('person', 'order', 'contribution_type')
+    autocomplete_fields = ['person']
 
 def merge_people(modeladmin, request, queryset):
     """
@@ -103,6 +104,7 @@ class PersonAdmin(admin.ModelAdmin):
     search_fields = ('last_name', 'first_name', 'email', 'orcid', 'affiliation')
     list_filter = ('affiliation',)
     actions = [merge_people]
+    ordering = ['last_name', 'first_name']
 
 @admin.register(Publication)
 class PublicationAdmin(admin.ModelAdmin):
@@ -111,6 +113,7 @@ class PublicationAdmin(admin.ModelAdmin):
     search_fields = ('title', 'abstract', 'keywords', 'doi', 'pmid', 'arxiv_id')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [AuthorOrderInline]
+    autocomplete_fields = ['corresponding_author']
     
     def get_authors(self, obj):
         return ", ".join([str(author) for author in obj.get_ordered_authors()])
@@ -151,6 +154,7 @@ class AuthorOrderAdmin(admin.ModelAdmin):
     list_filter = ('publication', 'contribution_type')
     search_fields = ('publication__title', 'person__first_name', 'person__last_name')
     ordering = ('publication', 'order')
+    autocomplete_fields = ['person', 'publication']
 
 # Register the Dissertation model
 class CoPromoterInline(admin.TabularInline):
@@ -158,6 +162,7 @@ class CoPromoterInline(admin.TabularInline):
     extra = 1
     verbose_name = "Co-promoter"
     verbose_name_plural = "Co-promoters"
+    autocomplete_fields = ['person']
 
 @admin.register(Dissertation)
 class DissertationAdmin(admin.ModelAdmin):
@@ -168,6 +173,7 @@ class DissertationAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     inlines = [CoPromoterInline]
     exclude = ('copromoters',)  # Exclude this field as we're using the inline instead
+    autocomplete_fields = ['author', 'promoter', 'supervisor']
     
     fieldsets = (
         ('Basic Information', {
