@@ -1,0 +1,19 @@
+runtime: python39
+
+env_variables:
+  DJANGO_SETTINGS_MODULE: "ResearchVault.settings"
+  DATABASE_URL: "postgresql://${USER}:${PASSWORD}@/${DATABASE_NAME}?host=/cloudsql/${CONNECTION_NAME}"
+  SECRET_KEY: "${SECRET_KEY}"
+  DEBUG: "False"
+  ALLOWED_HOSTS: ".run.app, .appspot.com"
+
+handlers:
+  - url: /static
+    static_dir: staticfiles/
+    secure: always
+
+  - url: /.*
+    script: auto
+    secure: always
+
+entrypoint: gunicorn -b :$PORT ResearchVault.ResearchVault.wsgi:application --workers 2 --threads 8 --timeout 0
